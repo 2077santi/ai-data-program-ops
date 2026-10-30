@@ -1,0 +1,9 @@
+date,workstream_id,type,severity,minutes_lost,description
+2026-08-19,WS1,Tool outage,high,90,Labeling tool down 09:40-11:10 (expired certificate)
+2026-08-19,WS2,Tool outage,high,90,Labeling tool down 09:40-11:10 (expired certificate)
+2026-08-19,WS3,Tool outage,high,90,Labeling tool down 09:40-11:10 (expired certificate)
+2026-08-19,WS4,Tool outage,high,90,Labeling tool down 09:40-11:10 (expired certificate)
+2026-08-19,WS5,Tool outage,high,90,Labeling tool down 09:40-11:10 (expired certificate)
+2026-08-19,WS6,Tool outage,high,90,Labeling tool down 09:40-11:10 (expired certificate)
+2026-08-04,WS4,Guideline clarification,medium,45,Client changed tie-break rule; work paused for Q&A
+2026-08-17,WS2,Guideline change,medium,60,Guideline v2: speaker-change tags required

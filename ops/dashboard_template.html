@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Program Atlas Ops</title>
+<meta name="description" content="Weekly operations dashboard for a multi-workstream AI data program: delivery forecast, RAG status, quality and margin.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --border: #e3e6eb; --text: #14181f; --muted: #5d6675;
+  --accent: #2f5bea; --accent-soft: #e8eefe; --good: #16804a; --warn: #b26a00; --bad: #c62f2f;
+  --chip-critical: #fde8e8; --chip-high: #fff1dc; --chip-medium: #fdf7d3;
+  --series-1: #2f5bea; --series-2: #e0663a; --series-3: #1a9e77; --series-4: #9c5bd1; --series-5: #8a94a6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1218; --surface: #171b23; --border: #2a303b; --text: #e9edf3; --muted: #9aa4b4;
+    --accent: #7a9cff; --accent-soft: #1d2640; --good: #4cc68a; --warn: #f0a640; --bad: #ff6b6b;
+    --chip-critical: #3d1d1f; --chip-high: #3a2b16; --chip-medium: #35321a;
+    --series-1: #7a9cff; --series-2: #ff8a5c; --series-3: #4cc6a0; --series-4: #c493f0; --series-5: #7d8799;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1218; --surface: #171b23; --border: #2a303b; --text: #e9edf3; --muted: #9aa4b4;
+  --accent: #7a9cff; --accent-soft: #1d2640; --good: #4cc68a; --warn: #f0a640; --bad: #ff6b6b;
+  --chip-critical: #3d1d1f; --chip-high: #3a2b16; --chip-medium: #35321a;
+  --series-1: #7a9cff; --series-2: #ff8a5c; --series-3: #4cc6a0; --series-4: #c493f0; --series-5: #7d8799;
+}
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+main { max-width: 1180px; margin: 0 auto; padding: 32px 16px 64px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+.eyebrow { font: 500 12px/1 "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.15; letter-spacing: -.02em; }
+.sub { color: var(--muted); margin-top: 6px; max-width: 640px; }
+.links a { color: var(--accent); text-decoration: none; font-weight: 500; margin-left: 16px; }
+.links a:first-child { margin-left: 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.kpi .label { color: var(--muted); font-size: 13px; }
+.kpi .value { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .note { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.kpi .value.good { color: var(--good); } .kpi .value.bad { color: var(--bad); }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; grid-column: span 12; min-width: 0; }
+.card.half { grid-column: span 6; }
+@media (max-width: 860px) { .card.half { grid-column: span 12; } }
+.card h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.card .hint { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+.chart { position: relative; height: 280px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+.chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chip.critical { background: var(--chip-critical); color: var(--bad); }
+.chip.high { background: var(--chip-high); color: var(--warn); }
+.chip.medium { background: var(--chip-medium); color: var(--warn); }
+.mono { font-family: "JetBrains Mono", monospace; font-size: 12.5px; }
+.flag { color: var(--bad); font-weight: 600; }
+.rag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.rag.green { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+.rag.amber { background: var(--chip-high); color: var(--warn); }
+.rag.red { background: var(--chip-critical); color: var(--bad); }
+footer { color: var(--muted); font-size: 13px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">AI data program · weekly review</div>
+      <h1>Program Atlas: Operations Dashboard</h1>
+      <p class="sub" id="scope"></p>
+    </div>
+    <nav class="links"><a href="https://github.com/2077santi/ai-data-program-ops">Source</a><a id="report-link" href="https://github.com/2077santi/ai-data-program-ops/tree/main/reports">Status report</a></nav>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Workstream status</h2>
+      <p class="hint">RAG per dimension, from the rules in SPEC.md. Overall status takes the worst of the three.</p>
+      <div class="table-wrap"><table id="rag"></table></div>
+    </div>
+    <div class="card">
+      <h2>Delivery forecast: days of slack per upcoming batch</h2>
+      <p class="hint">Open and expected batches burned oldest-first at each team's current capacity. Below zero = late.</p>
+      <div class="chart"><canvas id="forecast"></canvas></div>
+    </div>
+    <div class="card half">
+      <h2>Speed vs plan</h2>
+      <p class="hint">Weekly units per hour as % of planned UPH.</p>
+      <div class="chart"><canvas id="uph"></canvas></div>
+    </div>
+    <div class="card half">
+      <h2>Quality vs client target (last 4 weeks)</h2>
+      <p class="hint">QA pass rate on a 10% sample. Markers show each client's target.</p>
+      <div class="chart"><canvas id="quality"></canvas></div>
+    </div>
+    <div class="card half">
+      <h2>Gross margin by workstream (last 4 weeks)</h2>
+      <p class="hint">Paid hours (including idle time) vs units billed.</p>
+      <div class="chart"><canvas id="margin"></canvas></div>
+    </div>
+    <div class="card half">
+      <h2>Program volume and revenue</h2>
+      <p class="hint">Units delivered and revenue per week, all workstreams.</p>
+      <div class="chart"><canvas id="volume"></canvas></div>
+    </div>
+  </section>
+  <footer>Synthetic program data generated for this portfolio. Built with Python, DuckDB SQL and Chart.js.</footer>
+</main>
+<script>
+const DATA = /*__DATA__*/null;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const s = DATA.summary;
+const asOf = new Date(s.as_of).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+document.getElementById("scope").textContent =
+  `Week ${s.week} review, as of ${asOf}. ${s.workstreams} workstreams (search relevance, speech, images, LLM preference, safety, OCR) and ${s.annotators} annotators across 4 sites.`;
+document.getElementById("report-link").href = `https://github.com/2077santi/ai-data-program-ops/blob/main/reports/status_report_week_${String(s.week).padStart(2, "0")}.md`;
+
+const kpis = [
+  ["On-time delivery", pct(s.on_time_rate), `${s.batches_delivered} batches delivered`, "good"],
+  ["Batches at risk", s.batches_at_risk, "forecast to miss due date", s.batches_at_risk ? "bad" : "good"],
+  ["Quality (4 weeks)", pct(s.quality_4w, 1), "QA pass rate, all workstreams", ""],
+  ["Gross margin (4 weeks)", pct(s.margin_4w), `€${Math.round(s.revenue_4w).toLocaleString("en-US")} revenue`, ""],
+];
+document.getElementById("kpis").innerHTML = kpis.map(([l, v, n, c]) =>
+  `<div class="kpi"><div class="label">${l}</div><div class="value ${c}">${v}</div><div class="note">${n}</div></div>`).join("");
+
+const chip = r => `<span class="rag ${r.toLowerCase()}">${r}</span>`;
+document.getElementById("rag").innerHTML =
+  "<tr><th>Workstream</th><th>Delivery</th><th>Quality</th><th>Margin</th><th>Overall</th><th>What's happening</th><th>Actions</th></tr>" +
+  DATA.status.map(r => `<tr><td><span class="mono">${r.workstream_id}</span> ${esc(r.name)}</td><td>${chip(r.delivery)}</td><td>${chip(r.quality)}</td>
+    <td>${chip(r.margin)}</td><td>${chip(r.overall)}</td><td>${r.notes.map(esc).join("<br>") || "On track"}</td>
+    <td>${r.actions.map(esc).join("<br>") || "-"}</td></tr>`).join("");
+
+function draw() {
+  Chart.defaults.locale = "en-US";
+  Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.borderColor = css("--border");
+  const series = [1, 2, 3, 4, 5].map(i => css(`--series-${i}`));
+  const wsColors = { WS1: series[4], WS2: series[1], WS3: series[3], WS4: series[2], WS5: series[0], WS6: "#b9a23a" };
+  const ids = DATA.status.map(r => r.workstream_id);
+  const names = Object.fromEntries(DATA.status.map(r => [r.workstream_id, r.name]));
+
+  const fc = DATA.forecast;
+  new Chart(document.getElementById("forecast"), {
+    type: "bar",
+    data: { labels: fc.map(r => r.forecast_only ? r.batch_id.replace("next", "next ") : r.batch_id),
+      datasets: [{ data: fc.map(r => r.slack_days), backgroundColor: fc.map(r => r.slack_days < 0 ? css("--bad") : series[0]), borderRadius: 3, minBarLength: 3 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => { const r = fc[c.dataIndex]; return `${r.slack_days} days slack · projected ${r.projected_finish.slice(0, 10)} vs due ${r.due_date.slice(0, 10)}`; } } } },
+      scales: { y: { title: { display: true, text: "Days of slack" } }, x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 70, minRotation: 50 } } } },
+  });
+
+  const weeks = [...new Set(DATA.weekly.map(r => r.week))].sort((a, b) => a - b);
+  new Chart(document.getElementById("uph"), {
+    type: "line",
+    data: { labels: weeks.map(w => "W" + w), datasets: ids.map(id => ({ label: id,
+      data: weeks.map(w => { const r = DATA.weekly.find(x => x.workstream_id === id && x.week === w); return r && r.uph ? r.uph / r.target_uph * 100 : null; }),
+      borderColor: wsColors[id], backgroundColor: wsColors[id], borderWidth: id === "WS2" || id === "WS3" ? 3 : 1.5, pointRadius: 0, tension: .3 })) },
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label} ${names[c.dataset.label]}: ${c.raw?.toFixed(0)}%` } } },
+      scales: { y: { min: 60, max: 120, ticks: { callback: v => v + "%" } }, x: { grid: { display: false } } } },
+  });
+
+  const recent = DATA.weekly.filter(r => r.week > s.week - 4);
+  const agg = id => {
+    const rows = recent.filter(r => r.workstream_id === id);
+    const units = rows.reduce((a, r) => a + r.units, 0);
+    return {
+      quality: rows.reduce((a, r) => a + r.quality * r.units, 0) / units,
+      target: rows[0].quality_target,
+      margin: 1 - rows.reduce((a, r) => a + r.labor_cost_eur, 0) / rows.reduce((a, r) => a + r.revenue_eur, 0),
+    };
+  };
+  const stats = ids.map(agg);
+  new Chart(document.getElementById("quality"), {
+    data: { labels: ids, datasets: [
+      { type: "bar", label: "QA pass rate", data: stats.map(x => x.quality * 100), backgroundColor: stats.map(x => x.quality < x.target ? css("--bad") : series[0]), borderRadius: 4 },
+      { type: "line", label: "Target", data: stats.map(x => x.target * 100), showLine: false, pointStyle: "line", pointRadius: 18, pointBorderWidth: 3, borderColor: css("--text") },
+    ] },
+    options: { maintainAspectRatio: false, scales: { y: { min: 80, max: 100, ticks: { callback: v => v + "%" } }, x: { grid: { display: false } } } },
+  });
+
+  new Chart(document.getElementById("margin"), {
+    type: "bar",
+    data: { labels: ids, datasets: [{ data: stats.map(x => x.margin * 100),
+      backgroundColor: stats.map(x => x.margin < 0 ? css("--bad") : x.margin < 0.15 ? css("--warn") : series[2]), borderRadius: 4 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { y: { ticks: { callback: v => v + "%" } }, x: { grid: { display: false } } } },
+  });
+
+  const pw = DATA.program_weekly;
+  new Chart(document.getElementById("volume"), {
+    data: { labels: pw.map(r => "W" + r.week), datasets: [
+      { type: "bar", label: "Revenue (€)", data: pw.map(r => r.revenue_eur), backgroundColor: series[0], borderRadius: 4, yAxisID: "y" },
+      { type: "line", label: "Gross margin", data: pw.map(r => (1 - r.labor_cost_eur / r.revenue_eur) * 100), borderColor: series[1], backgroundColor: series[1], yAxisID: "y1", tension: .3 },
+    ] },
+    options: { maintainAspectRatio: false, scales: {
+      y: { min: 0, ticks: { callback: v => "€" + (v / 1000).toFixed(0) + "k" } },
+      y1: { position: "right", min: 0, max: 40, grid: { display: false }, ticks: { callback: v => v + "%" } }, x: { grid: { display: false } } } },
+  });
+}
+if (window.Chart) draw();
+else document.querySelectorAll(".chart").forEach(el => el.innerHTML = "<p class='hint'>Charts need an internet connection (Chart.js CDN).</p>");
+</script>
+</body>
+</html>
