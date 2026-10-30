@@ -1,0 +1,7 @@
+workstream_id,name,unit,target_uph,quality_target,price_per_unit,batch_size,sla_days
+WS1,Search relevance rating,judgment,60.0,0.92,0.26,19000,10
+WS2,Spanish speech transcription,audio minute,6.0,0.95,4.0,1500,14
+WS3,Image bounding boxes,image,25.0,0.93,0.95,4700,10
+WS4,LLM preference ranking,comparison,18.0,0.9,1.65,5100,10
+WS5,Safety red-team prompts,prompt,8.0,0.9,3.7,1550,14
+WS6,Document OCR QA,page,40.0,0.96,0.36,7800,10
