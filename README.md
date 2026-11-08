@@ -1,14 +1,12 @@
 # AI Data Program Ops Dashboard
 
-**The weekly program review for a multi-workstream AI training-data project: what's late, what's at risk, what's losing money, and what to do about it.**
+The weekly program review for a multi-workstream AI training-data project: what's late, what's at risk, what's losing money, and what to do about it.
 
 A SQL data model and forecasting engine for an AI data program with 6 workstreams, 44 annotators across 4 sites, and weekly client batches with SLAs. It produces a RAG status per workstream, a delivery forecast that warns *before* a batch is late, and the weekly status report a program analyst sends to the client lead.
 
-**[Live dashboard →](https://2077santi.github.io/ai-data-program-ops/)** · [Week 10 status report](reports/status_report_week_10.md) · [Spec & RAG rules](SPEC.md)
+[Live dashboard](https://2077santi.github.io/ai-data-program-ops/) · [Week 10 status report](reports/status_report_week_10.md) · [Spec & RAG rules](SPEC.md)
 
-![Dashboard](docs/screenshot.png)
-
----
+![Dashboard](docs/screenshot.jpg)
 
 ## The program (synthetic)
 
@@ -29,7 +27,7 @@ The [generator](ops/generate_data.py) simulates 10 weeks of daily production, ti
 
 | | Workstream | Problem | Recommended action |
 |---|---|---|---|
-| 🔴 | **WS2 Speech** | Guideline v2 (week 7) cut speed 20% and two annotators left in week 8. Every batch so far was on time, but the forecast shows **the next 5 batches will be 1-16 days late**. | Add 4 trained annotators (6 → 10); raise a change request, since v2 increased effort per unit |
+| 🔴 | **WS2 Speech** | Guideline v2 (week 7) cut speed 20% and two annotators left in week 8. Every batch so far was on time, but the forecast shows **the next 5 batches will be 1-16 days late**. | Add 4 trained annotators (6 to 10); raise a change request, since v2 increased effort per unit |
 | 🔴 | **WS3 Images** | Running at 81% of planned speed, so cost per image (€1.03) exceeds the price (€0.95): **-8% margin** | Review pricing or move volume to a lower-cost site |
 | 🔴 | **WS4 LLM preference** | QA pass rate **87.4% vs 90%** client target | Calibration on top error categories; QA sampling to 20% until recovered |
 
@@ -71,7 +69,7 @@ make test    # 10 tests
 
 ## Power BI
 
-The star schema (`data/*.csv`) loads directly into Power BI: relate `fact_production[batch_id]` → `dim_batch`, `fact_production[annotator_id]` → `dim_annotator`, `dim_batch[workstream_id]` → `dim_workstream`. The measure definitions are in [`docs/power-bi-measures.md`](docs/power-bi-measures.md).
+The star schema (`data/*.csv`) loads directly into Power BI: relate `fact_production[batch_id]` to `dim_batch`, `fact_production[annotator_id]` to `dim_annotator`, `dim_batch[workstream_id]` to `dim_workstream`. The measure definitions are in [`docs/power-bi-measures.md`](docs/power-bi-measures.md).
 
 ## Project structure
 
